@@ -1,0 +1,202 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subdomain String  @unique
+  name      String?
+
+  users          User[]
+  categories     Category[]
+  products       Product[]
+  carts        cart[]
+  userProfiles   UserProfile[]
+  cartItems    cartItem[]
+  productDetails ProductDetail[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  phoneNumber String  @unique
+  passwordHash           String?
+  isActive    Boolean @default(true)
+
+  profile UserProfile? @relation("UserToProfile")
+  cart  cart?      @relation("Usercart")
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, phoneNumber])
+  @@index([tenantId])
+  @@index([tenantId, phoneNumber, isActive])
+  @@map("users")
+}
+
+model UserProfile {
+  id        String  @id @default(uuid())
+  avatarUrl String?
+
+  userId String @unique
+  user   User   @relation("UserToProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName              String?
+  lastName               String?
+  email                  String?  @unique
+  isEmailVerified        Boolean?
+  shippingAddresses      String   @default("[]")
+  defaultShippingAddress String?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tenantId, defaultShippingAddress, shippingAddresses])
+  @@map("user_profiles")
+}
+
+model cart {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation("Usercart", fields: [userId], references: [id], onDelete: Cascade)
+
+  items cartItem[]
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("carts")
+}
+
+model cartItem {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cartId String
+  cart   cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity   Int      @default(1)
+  priceAtAdd Decimal? @db.Decimal(12, 2)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, cartId, productId])
+  @@index([tenantId])
+  @@index([tenantId, cartId])
+  @@index([tenantId, productId])
+  @@map("cart_items")
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  name             String
+  productCode      String   @unique
+  slug             String?  @unique
+  description      String?
+  shortDescription String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  imagesURLs       String[]
+  tags             String[]
+
+  basePrice       Decimal  @db.Decimal(12, 2)
+  finalPrice      Decimal  @db.Decimal(12, 2)
+  discountPercent Decimal? @db.Decimal(5, 2)
+  discountedPrice Decimal? @db.Decimal(12, 2)
+
+  stockQuantity    Int     @default(0)
+  selectedIncart Int     @default(0)
+  isActive         Boolean @default(true)
+  isAvailable      Boolean @default(false)
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  detail       ProductDetail?
+  cartItems cartItem[]
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, productCode])
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, isAvailable])
+  @@index([tenantId, categoryId])
+  @@map("products")
+}
+
+model ProductDetail {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String  @unique
+
+  size      Int?
+  weight    Float?
+  length    Float?
+  diameter  Float?
+  width     Float?
+  thickness Float?
+  row       Int?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("product_details")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String
+  slug        String? @unique
+  description String?
+  image       String?
+
+  parentId String?
+  parent   Category?  @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children Category[] @relation("CategoryChildren")
+
+  products Product[]
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name, parentId])
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, parentId])
+  @@map("categories")
+}
+
