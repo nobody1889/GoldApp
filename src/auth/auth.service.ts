@@ -16,48 +16,55 @@ export class AuthService {
     password: string,
     tenantId: string,
   ) {
-    const profile = await this.prisma.userProfile.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: {
         phoneNumber,
         tenantId,
       },
-      include: {
-        user: true,
-      },
     });
     
-    if (!profile || !profile?.user?.passwordHash) {
+    if (!user || !user?.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const passwordValid = await bcrypt.compare(
       password,
-      profile.user.passwordHash,
+      user.passwordHash,
     );
 
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (!profile.user.isActive) {
+    if (!user.isActive) {
       throw new UnauthorizedException('User is inactive');
     }
 
-    return profile;
+    return user;
   }
 
   async login(body: { phoneNumber: string; password: string; tenantId: string }) {
-    const profile = await this.validateUser(
+    const user = await this.validateUser(
       body.phoneNumber,
       body.password,
       body.tenantId,
     );
 
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const payload = {
-      sub: profile.user.id,
-      email: profile.email,
-      tenantId: profile.tenantId,
+      sub: user.id,
+      phone: user.phoneNumber,
+      tenantId: user.tenantId,
     };
+
+    // const payload = {
+    //   sub: profile.user.id,
+    //   email: profile.email,
+    //   tenantId: profile.tenantId,
+    // };
 
     return {
       access_token: this.jwtService.sign(payload),
