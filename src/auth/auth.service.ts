@@ -50,10 +50,6 @@ export class AuthService {
       body.tenantId,
     );
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
     const payload = {
       sub: user.id,
       phone: user.phoneNumber,
