@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class TenantService {
+export class TenantService{
+  constructor( private readonly prisma: PrismaService ){}
+
   create(createTenantDto: CreateTenantDto) {
-    return 'This action adds a new tenant';
+    return this.prisma.tenant.create({
+      data: createTenantDto
+  });
   }
 
   findAll() {
@@ -20,7 +25,12 @@ export class TenantService {
     return `This action updates a #${id} tenant`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} tenant`;
+  remove(id: string) {
+    return this.prisma.tenant.delete({
+      where:{
+        id: id,
+      }
+        
+    });
   }
 }
