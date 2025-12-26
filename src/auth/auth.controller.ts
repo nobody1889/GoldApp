@@ -10,7 +10,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() body: { phoneNumber: string; password: string; tenantId: string }) {
+  async login(@Body() body: { phoneNumber: string; password: string }) {
     return await this.authService.login(body);
   }
 
