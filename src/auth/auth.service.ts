@@ -14,13 +14,11 @@ export class AuthService {
   async validateUser(
     phoneNumber: string,
     password: string,
-    tenantId: string,
   ) {
-    const user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findUnique({
       where: {
         phoneNumber,
-        tenantId,
-      },
+      },include:{tenant:true}
     });
     
     if (!user || !user?.passwordHash) {
@@ -47,7 +45,6 @@ export class AuthService {
     const user = await this.validateUser(
       body.phoneNumber,
       body.password,
-      body.tenantId,
     );
 
     const payload = {
@@ -55,12 +52,6 @@ export class AuthService {
       phone: user.phoneNumber,
       tenantId: user.tenantId,
     };
-
-    // const payload = {
-    //   sub: profile.user.id,
-    //   email: profile.email,
-    //   tenantId: profile.tenantId,
-    // };
 
     return {
       access_token: this.jwtService.sign(payload),
