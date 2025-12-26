@@ -18,7 +18,9 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: {
         phoneNumber,
-      },include:{tenant:true}
+      },include:{
+        tenant:true
+      }
     });
     
     if (!user || !user?.passwordHash) {
@@ -41,7 +43,7 @@ export class AuthService {
     return user;
   }
 
-  async login(body: { phoneNumber: string; password: string; tenantId: string }) {
+  async login(body: { phoneNumber: string; password: string }) {
     const user = await this.validateUser(
       body.phoneNumber,
       body.password,
